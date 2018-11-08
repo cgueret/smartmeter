@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import time
+import datetime
 
 # TCRT5000 tracking sensor
 # https://raspberrytips.nl/tcrt5000
@@ -21,7 +22,7 @@ DB_PARAMS = {
     'cursorclass': pymysql.cursors.DictCursor,
     'charset': 'utf8'
 }
-VERSION = 1.0
+VERSION = 1.1
 
 def setup():
     GPIO.setmode(GPIO.BOARD)
@@ -44,12 +45,26 @@ def initdb():
 	    cursor.execute("INSERT INTO smartmeter.status VALUES ('version' , '1.0');")
 	    cursor.execute("INSERT INTO smartmeter.status VALUES ('current_speed', '');")
 	    db.commit()
+	elif version == '1.0':
+	    cursor.execute("CREATE TABLE smartmeter.readings (datetime DATETIME NOT NULL, revs INT NOT NULL, PRIMARY KEY (datetime) ) CHARSET=utf8;")
+	    cursor.execute("UPDATE smartmeter.status SET value='1.1' WHERE parameter='version'")
+	    db.commit()
     db.close()
 
 def loop():
     b = 0
     start = time.time()
     revs = 0
+
+    # Get the last time we recorded a number of revolutions
+    last_reading = None
+    db = pymysql.connect(**DB_PARAMS)
+    with db.cursor() as cursor:
+	cursor.execute("SELECT datetime FROM smartmeter.readings ORDER BY datetime DESC LIMIT 1")
+	for row in cursor.fetchall():
+	    last_reading = row['datetime']
+    print ('Last reading: {}'.format(last_reading))
+
     while True:
 	if GPIO.input(TrackingPin) != GPIO.LOW:
 	    # Red marker
@@ -75,6 +90,20 @@ def loop():
 		finally:
 		    db.close()
 
+		# See if we need to record a new reading
+		spacing = 60 # 1 minute
+		rounded_time = datetime.datetime.fromtimestamp(round(time.time() / spacing, 0) * spacing)
+		if rounded_time != last_reading:
+		    print ('{} => {}'.format(rounded_time, revs))
+		    db = pymysql.connect(**DB_PARAMS)
+		    try:
+			with db.cursor() as cursor:
+			    cursor.execute("INSERT INTO smartmeter.readings VALUES('{}', '{}')".format(rounded_time.strftime('%Y-%m-%d %H:%M:%S'), revs))
+			db.commit()
+		    finally:
+			db.close()
+		    last_reading = rounded_time
+		    revs = 0
 
 def destroy():
     GPIO.cleanup()
@@ -86,3 +115,6 @@ if __name__ == '__main__':
 	loop()
     except KeyboardInterrupt:
 	destroy()
+
+#ts = time.time()
+#st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
