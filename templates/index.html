@@ -24,12 +24,12 @@
 		<div class="row">
 			<div class="col-sm-6">
 				<div class="card">
-					<canvas id="myChart" style="padding: 5px"></canvas>
+					<div class='chart'  style="padding:5px">
+						<div id='dayGraph'></div>
+					</div>
 					<div class="card-body">
-						<h5 class="card-title">Special title treatment</h5>
-						<p class="card-text">With supporting text below as a natural
-							lead-in to additional content.</p>
-						<a href="#" class="btn btn-primary">Go somewhere</a>
+						<h5 class="card-title">Day comparison</h5>
+						<p class="card-text">Consumption from today and yesterday</p>
 					</div>
 				</div>
 			</div>
@@ -39,17 +39,14 @@
 						<div id='myContainer'></div>
 					</div>
 					<div class="card-body">
-						<h5 class="card-title">Special title treatment</h5>
-						<p class="card-text">With supporting text below as a natural
-							lead-in to additional content.</p>
-						<a href="#" class="btn btn-primary">Go somewhere</a>
+						<h5 class="card-title">Current speed</h5>
+						<p class="card-text">Real time energy usage</p>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Optional JavaScript -->
 	<!-- jQuery first, then Popper.js, then Bootstrap JS -->
 	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
 	<script
@@ -64,59 +61,62 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.8/c3.js"></script>
 
 	<script>
-		var test = c3.generate({
-			bindto : '#myContainer',
-			data : {
-				url : '/api/speed',
-				type : 'gauge'
-			},
-			gauge : {
-				label : {
-					format: function(value, ratio) {
-		                return value;
-		            },
-					show : true
-				},
-			units : ' rev/s'
-			},
-			legend: {
-				  hide: true
-			},
-			color : {
-				pattern : [ '#60B044', '#F6C600', '#F97600', '#FF0000' ], // the three color levels for the percentage values.
-				threshold : {
-					values : [ 30, 60, 90, 100 ]
-				}
-			},
-			size : {
-				height : 180
-			}
-		});
-		setInterval(function () {test.load({
+	var test = c3.generate({
+		bindto : '#myContainer',
+		data : {
 			url : '/api/speed',
 			type : 'gauge'
-		})}, 500);
-		
-		var ctx = document.getElementById('myChart').getContext('2d');
-		var chart = new Chart(ctx, {
-			// The type of chart we want to create
-			type : 'line',
-
-			// The data for our dataset
-			data : {
-				labels : [ "January", "February", "March", "April", "May",
-						"June", "July" ],
-				datasets : [ {
-					label : "My First dataset",
-					backgroundColor : 'rgb(255, 99, 132)',
-					borderColor : 'rgb(255, 99, 132)',
-					data : [ 0, 10, 5, 2, 20, 30, 45 ],
-				} ]
+		},
+		gauge : {
+			label : {
+				format : function(value, ratio) {
+					return value;
+				},
+				show : true
 			},
+			units : ' rev/s'
+		},
+		legend : {
+			hide : true
+		},
+		color : {
+			pattern : [ '#60B044', '#F6C600', '#F97600', '#FF0000' ], 
+			threshold : {
+				values : [ 30, 60, 90, 100 ]
+			}
+		},
+		size : {
+			height : 180
+		}
+	});
 
-			// Configuration options go here
-			options : {}
-		});
+	
+	setInterval(function() {
+		test.load({
+			url : '/api/speed',
+			type : 'gauge'
+		})
+	}, 5000);
+
+	var chart = c3.generate({
+		bindto : '#dayGraph',
+	    data: {
+	    	x: 'x',
+			url : '/api/histogram',
+	        xFormat: '%Y-%m-%d %H:%M:%S'
+	    },
+	    axis: {
+	        x: {
+	            type: 'timeseries',
+	            tick: {
+	            	count: 15,
+	                format: '%H:%M'
+	            }
+	        }
+	    }
+	});
+	
+
 	</script>
 </body>
 </html>
