@@ -96,7 +96,7 @@
 			url : '/api/speed',
 			type : 'gauge'
 		})
-	}, 5000);
+	}, 500);
 
 	var chart = c3.generate({
 		bindto : '#dayGraph',
@@ -116,6 +116,13 @@
 	    }
 	});
 	
+	setInterval(function() {
+		chart.load({
+	    	x: 'x',
+			url : '/api/histogram',
+	        xFormat: '%Y-%m-%d %H:%M:%S'
+		})
+	}, 60000);
 
 	</script>
 </body>
