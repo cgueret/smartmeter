@@ -55,6 +55,7 @@ def loop():
 	b = 0
 	start = time.time()
 	revs = 0
+	last_speed = None
 	
 	# Get the last time we recorded a number of revolutions
 	last_reading = None
@@ -74,21 +75,23 @@ def loop():
 			if b > 1000:
 				# We saw the red mark
 				now = time.time()
-				speed = now - start
+				speed = round(now - start, 2)
 				print ('Tick! {} {}'.format(b, speed))
 				revs = revs + 1
 				start = now
 				b = 0
 		
-				# Update the speed tracker in the DB
-				db = pymysql.connect(**DB_PARAMS)
-				try:
-					query = "UPDATE smartmeter.status SET value='{}' WHERE parameter='current_speed'".format(speed)
-					with db.cursor() as cursor:
-						cursor.execute(query)
-					db.commit()
-				finally:
-					db.close()
+				if speed != last_speed:
+					last_speed = speed
+					# Update the speed tracker in the DB
+					db = pymysql.connect(**DB_PARAMS)
+					try:
+						query = "UPDATE smartmeter.status SET value='{}' WHERE parameter='current_speed'".format(speed)
+						with db.cursor() as cursor:
+							cursor.execute(query)
+						db.commit()
+					finally:
+						db.close()
 				
 				# See if we need to record a new reading
 				spacing = 60  # 1 minute
